@@ -1,27 +1,51 @@
 {
   "name": "motorcycle-marketplace",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "description": "Vương Cường 68 - Xe Máy Cũ - Motorcycle marketplace website",
+  "keywords": ["motorcycle", "marketplace", "nextjs", "supabase", "vietnam"],
+  "author": "Vương Cường 68",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "build:production": "NODE_ENV=production npm run build",
+    "postbuild": "echo 'Build completed successfully!'",
+    "health": "curl -f http://localhost:3000/health || exit 1"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.90.0",
+    "fast-check": "^4.5.3",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }
