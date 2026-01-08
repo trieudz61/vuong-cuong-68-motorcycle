@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -7,6 +7,7 @@ import { Footer } from '@/components/public/Footer';
 
 interface MotorcycleData {
   id: string;
+  display_id?: number;
   title: string;
   brand: string;
   model: string;
@@ -20,6 +21,7 @@ interface MotorcycleData {
   images: string[];
   contact_phone: string;
   contact_address: string;
+  is_sold?: boolean;
 }
 
 function MotorcycleDetailPage() {
@@ -42,6 +44,8 @@ function MotorcycleDetailPage() {
         const res = await fetch(`/api/motorcycles/${id}`);
         if (!res.ok) { setError('Không tìm thấy xe máy'); return; }
         const data = await res.json();
+        console.log('Motorcycle data:', data);
+        console.log('Display ID:', data.display_id);
         setMotorcycle(data);
         fetchRelated(data);
       } catch { setError('Lỗi tải dữ liệu'); }
@@ -166,8 +170,15 @@ function MotorcycleDetailPage() {
           )}
         </div>
         <div className="p-3">
+          <div className="flex items-center gap-2 mb-1">
+            {item.display_id && (
+              <span className="px-2 py-0.5 bg-stone-800 text-amber-500 text-xs font-bold rounded">
+                #{String(item.display_id).padStart(4, '0')}
+              </span>
+            )}
+            <p className="text-gray-400 text-xs">{item.brand}  {item.year}</p>
+          </div>
           <p className="text-gray-900 font-medium text-sm line-clamp-1">{item.title}</p>
-          <p className="text-gray-400 text-xs mt-0.5">{item.brand}  {item.year}</p>
           <p className="text-amber-600 font-bold mt-1">{formatPrice(item.price)}</p>
         </div>
       </a>
@@ -231,12 +242,27 @@ function MotorcycleDetailPage() {
               <span className={`px-3 py-1 text-xs font-bold rounded-full ${motorcycle.condition === 'Mới' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{motorcycle.condition}</span>
               <span className="px-3 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-600">{motorcycle.brand}</span>
               <span className="px-3 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-600">{motorcycle.year}</span>
+              {motorcycle.display_id && (
+                <span className="px-3 py-1 text-xs font-bold rounded-full bg-stone-800 text-amber-500">
+                  #{String(motorcycle.display_id).padStart(4, '0')}
+                </span>
+              )}
             </div>
             
             <div>
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900 leading-tight">{motorcycle.title}</h1>
               <p className="text-gray-500 text-sm mt-1">{motorcycle.brand}  {motorcycle.model}</p>
             </div>
+
+            {/* Mã Xe */}
+            {motorcycle.display_id && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-amber-800 font-bold text-lg">
+                  🏷️ Mã Xe: #{String(motorcycle.display_id).padStart(4, '0')}
+                </p>
+                <p className="text-amber-600 text-sm mt-1">Báo mã này khi liên hệ để được hỗ trợ nhanh</p>
+              </div>
+            )}
             
             {/* Price Card */}
             <div className={`rounded-xl p-4 ${isContactPrice ? 'bg-gray-100' : 'bg-amber-500'}`}>

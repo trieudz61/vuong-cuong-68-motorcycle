@@ -41,16 +41,14 @@ export default function EditMotorcyclePage({ params }: PageProps) {
 
   const fetchMotorcycle = async () => {
     try {
-      const { data, error } = await supabase
-        .from('motorcycles')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (error || !data) {
+      const response = await fetch(`/api/motorcycles/${id}`)
+      
+      if (!response.ok) {
         setError('Không tìm thấy xe máy')
         return
       }
+
+      const data = await response.json()
       setMotorcycle(data)
     } catch (err) {
       setError('Đã xảy ra lỗi khi tải dữ liệu')
@@ -64,13 +62,18 @@ export default function EditMotorcyclePage({ params }: PageProps) {
     setError(null)
 
     try {
-      const { error } = await supabase
-        .from('motorcycles')
-        .update(data)
-        .eq('id', id)
+      const response = await fetch(`/api/motorcycles/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
 
-      if (error) {
-        setError(error.message)
+      const result = await response.json()
+
+      if (!response.ok) {
+        setError(result.error || result.message || 'Đã xảy ra lỗi khi cập nhật xe máy')
         return
       }
 

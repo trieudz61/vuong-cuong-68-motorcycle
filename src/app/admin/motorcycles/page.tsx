@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import type { Motorcycle } from '@/types'
 
+type SortField = 'display_id' | 'title' | 'brand' | 'price' | 'is_sold' | 'created_at'
+type SortOrder = 'asc' | 'desc'
+
 export default function AdminMotorcyclesPage() {
   const [user, setUser] = useState<{ email: string } | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -12,6 +15,8 @@ export default function AdminMotorcyclesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(1)
+  const [sortField, setSortField] = useState<SortField>('created_at')
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const limit = 20
 
   useEffect(() => {
@@ -30,7 +35,39 @@ export default function AdminMotorcyclesPage() {
     if (!authLoading && user) {
       fetchMotorcycles()
     }
-  }, [authLoading, user, page])
+  }, [authLoading, user, page, sortField, sortOrder])
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortOrder('asc')
+    }
+  }
+
+  const sortedMotorcycles = [...motorcycles].sort((a, b) => {
+    let aVal: string | number | boolean = a[sortField] ?? ''
+    let bVal: string | number | boolean = b[sortField] ?? ''
+    
+    if (typeof aVal === 'string') aVal = aVal.toLowerCase()
+    if (typeof bVal === 'string') bVal = bVal.toLowerCase()
+    
+    if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1
+    if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1
+    return 0
+  })
+
+  const SortIcon = ({ field }: { field: SortField }) => (
+    <span className="ml-1 inline-flex flex-col">
+      <svg className={`w-3 h-3 ${sortField === field && sortOrder === 'asc' ? 'text-amber-500' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 24 24">
+        <path d="M7 14l5-5 5 5z"/>
+      </svg>
+      <svg className={`w-3 h-3 -mt-1 ${sortField === field && sortOrder === 'desc' ? 'text-amber-500' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 24 24">
+        <path d="M7 10l5 5 5-5z"/>
+      </svg>
+    </span>
+  )
 
   const fetchMotorcycles = async () => {
     setIsLoading(true)
@@ -38,19 +75,17 @@ export default function AdminMotorcyclesPage() {
       const from = (page - 1) * limit
       const to = from + limit - 1
 
-      const { data, error, count } = await supabase
-        .from('motorcycles')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to)
-
-      if (error) {
-        console.error('Error fetching motorcycles:', error)
+      // Sử dụng API thay vì direct Supabase client
+      const response = await fetch(`/api/motorcycles?showAll=true&page=${page}&limit=${limit}`)
+      
+      if (!response.ok) {
+        console.error('Error fetching motorcycles:', response.statusText)
         return
       }
 
-      setMotorcycles(data || [])
-      setTotalCount(count || 0)
+      const result = await response.json()
+      setMotorcycles(result.motorcycles || [])
+      setTotalCount(result.totalCount || 0)
     } catch (error) {
       console.error('Error fetching motorcycles:', error)
     } finally {
@@ -62,33 +97,44 @@ export default function AdminMotorcyclesPage() {
     if (!confirm('Bạn có chắc muốn xóa xe máy này?')) return
     
     try {
-      const { error } = await supabase
-        .from('motorcycles')
-        .delete()
-        .eq('id', id)
+      const response = await fetch(`/api/motorcycles/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
-      if (error) {
-        alert('Lỗi xóa: ' + error.message)
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('Delete error:', result)
+        alert('Lỗi xóa: ' + (result.error || result.message || 'Không thể xóa xe máy'))
         return
       }
 
       // Xóa khỏi state
       setMotorcycles(prev => prev.filter(m => m.id !== id))
       setTotalCount(prev => prev - 1)
+      
+      alert('Đã xóa xe máy thành công!')
     } catch (error) {
       console.error('Error deleting motorcycle:', error)
-      alert('Lỗi kết nối khi xóa')
+      alert('Lỗi kết nối khi xóa: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
   }
 
   const toggleSoldStatus = async (motorcycle: Motorcycle) => {
     try {
-      const { error } = await supabase
-        .from('motorcycles')
-        .update({ is_sold: !motorcycle.is_sold })
-        .eq('id', motorcycle.id)
+      const response = await fetch(`/api/motorcycles/${motorcycle.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_sold: !motorcycle.is_sold }),
+      })
 
-      if (error) {
+      if (!response.ok) {
+        const error = await response.json()
         alert('Lỗi cập nhật: ' + error.message)
         return
       }
@@ -99,6 +145,7 @@ export default function AdminMotorcyclesPage() {
       ))
     } catch (error) {
       console.error('Error updating motorcycle:', error)
+      alert('Lỗi kết nối khi cập nhật')
     }
   }
 
@@ -146,7 +193,7 @@ export default function AdminMotorcyclesPage() {
         ) : motorcycles.length === 0 ? (
           <div className="text-center py-8 text-gray-500">Chưa có xe máy nào</div>
         ) : (
-          motorcycles.map((motorcycle) => (
+          sortedMotorcycles.map((motorcycle) => (
             <div key={motorcycle.id} className="bg-white rounded-lg shadow p-3">
               <div className="flex gap-3">
                 <div className="w-20 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
@@ -161,8 +208,15 @@ export default function AdminMotorcyclesPage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    {motorcycle.display_id && (
+                      <span className="px-2 py-0.5 bg-stone-800 text-amber-500 text-xs font-bold rounded">
+                        #{String(motorcycle.display_id).padStart(4, '0')}
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-500">{motorcycle.brand} {motorcycle.model}</span>
+                  </div>
                   <p className="font-medium text-gray-900 text-sm line-clamp-1">{motorcycle.title}</p>
-                  <p className="text-xs text-gray-500">{motorcycle.brand} {motorcycle.model}</p>
                   <p className="text-sm font-semibold text-blue-600 mt-1">{formatPrice(motorcycle.price)}</p>
                 </div>
                 <button
@@ -208,29 +262,42 @@ export default function AdminMotorcyclesPage() {
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Hình</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Tiêu đề</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Hãng/Model</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Giá</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Trạng thái</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Ngày đăng</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('display_id')}>
+                  <span className="flex items-center">Mã Xe<SortIcon field="display_id" /></span>
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('title')}>
+                  <span className="flex items-center">Tiêu đề<SortIcon field="title" /></span>
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('brand')}>
+                  <span className="flex items-center">Hãng/Model<SortIcon field="brand" /></span>
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('price')}>
+                  <span className="flex items-center">Giá<SortIcon field="price" /></span>
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('is_sold')}>
+                  <span className="flex items-center">Trạng thái<SortIcon field="is_sold" /></span>
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('created_at')}>
+                  <span className="flex items-center">Ngày đăng<SortIcon field="created_at" /></span>
+                </th>
                 <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     Đang tải...
                   </td>
                 </tr>
               ) : motorcycles.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     Chưa có xe máy nào
                   </td>
                 </tr>
               ) : (
-                motorcycles.map((motorcycle) => (
+                sortedMotorcycles.map((motorcycle) => (
                   <tr key={motorcycle.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="w-16 h-12 bg-gray-100 rounded overflow-hidden">
@@ -246,6 +313,15 @@ export default function AdminMotorcyclesPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                           </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {motorcycle.display_id && (
+                          <span className="px-2 py-1 bg-stone-800 text-amber-500 text-xs font-bold rounded">
+                            #{String(motorcycle.display_id).padStart(4, '0')}
+                          </span>
                         )}
                       </div>
                     </td>

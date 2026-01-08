@@ -31,28 +31,18 @@ export default function NewMotorcyclePage() {
     setError(null)
 
     try {
-      const { error } = await supabase
-        .from('motorcycles')
-        .insert({
-          title: data.title,
-          brand: data.brand,
-          model: data.model,
-          year: data.year,
-          condition: data.condition,
-          mileage: data.mileage,
-          engine_capacity: data.engine_capacity,
-          fuel_type: data.fuel_type,
-          color: data.color,
-          price: data.price,
-          description: data.description || '',
-          images: data.images || [],
-          contact_phone: data.contact_phone,
-          contact_address: data.contact_address,
-          is_sold: false
-        })
+      const response = await fetch('/api/motorcycles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
 
-      if (error) {
-        setError(error.message)
+      const result = await response.json()
+
+      if (!response.ok) {
+        setError(result.error || result.message || 'Đã xảy ra lỗi khi tạo xe máy')
         return
       }
 

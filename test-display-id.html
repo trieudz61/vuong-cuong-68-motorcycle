@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Display ID</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .motorcycle-item { 
+            border: 1px solid #eee; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .display-id { 
+            background: #333; 
+            color: #fbbf24; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            font-weight: bold;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏷️ Test Display ID - Mã Xe</h1>
+    
+    <div class="section">
+        <h3>📋 Danh sách xe máy với Mã Xe</h3>
+        <button onclick="loadMotorcycles()">Load Motorcycles</button>
+        <div id="motorcyclesList"></div>
+    </div>
+
+    <div class="section">
+        <h3>🔍 Test tìm xe theo Mã Xe</h3>
+        <input type="text" id="searchId" placeholder="Nhập mã xe (VD: 0001)" style="padding: 5px;">
+        <button onclick="searchByDisplayId()">Tìm xe</button>
+        <div id="searchResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>📊 Thống kê Display ID</h3>
+        <div id="statistics"></div>
+    </div>
+
+    <script>
+        let allMotorcycles = [];
+
+        async function loadMotorcycles() {
+            try {
+                const response = await fetch('/api/motorcycles?showAll=true&limit=50');
+                const data = await response.json();
+                allMotorcycles = data.motorcycles || [];
+                
+                displayMotorcycles(allMotorcycles);
+                showStatistics();
+            } catch (error) {
+                document.getElementById('motorcyclesList').innerHTML = 
+                    `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function displayMotorcycles(motorcycles) {
+            const container = document.getElementById('motorcyclesList');
+            
+            if (motorcycles.length === 0) {
+                container.innerHTML = '<p>Không có xe máy nào</p>';
+                return;
+            }
+
+            const html = motorcycles.map(motorcycle => {
+                const displayId = motorcycle.display_id 
+                    ? `#${String(motorcycle.display_id).padStart(4, '0')}`
+                    : 'NO ID';
+                
+                return `
+                    <div class="motorcycle-item">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                            <span class="display-id">${displayId}</span>
+                            <strong>${motorcycle.title}</strong>
+                            ${motorcycle.is_sold ? '<span style="color: red; font-size: 12px;">[ĐÃ BÁN]</span>' : ''}
+                        </div>
+                        <div style="font-size: 14px; color: #666;">
+                            ${motorcycle.brand} ${motorcycle.model} • ${motorcycle.year} • 
+                            ${formatPrice(motorcycle.price)}
+                        </div>
+                        <div style="font-size: 12px; color: #999;">
+                            ID: ${motorcycle.id} • Created: ${new Date(motorcycle.created_at).toLocaleString('vi-VN')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        function searchByDisplayId() {
+            const searchValue = document.getElementById('searchId').value.trim();
+            const resultContainer = document.getElementById('searchResult');
+            
+            if (!searchValue) {
+                resultContainer.innerHTML = '<div class="error">Vui lòng nhập mã xe</div>';
+                return;
+            }
+
+            // Remove # if user entered it
+            const cleanId = searchValue.replace('#', '');
+            const searchNumber = parseInt(cleanId);
+
+            if (isNaN(searchNumber)) {
+                resultContainer.innerHTML = '<div class="error">Mã xe phải là số</div>';
+                return;
+            }
+
+            const found = allMotorcycles.filter(m => m.display_id === searchNumber);
+            
+            if (found.length === 0) {
+                resultContainer.innerHTML = `<div class="error">❌ Không tìm thấy xe với mã #${String(searchNumber).padStart(4, '0')}</div>`;
+            } else {
+                resultContainer.innerHTML = `<div class="success">✅ Tìm thấy ${found.length} xe:</div>`;
+                displayMotorcycles(found);
+            }
+        }
+
+        function showStatistics() {
+            const container = document.getElementById('statistics');
+            
+            const totalMotorcycles = allMotorcycles.length;
+            const withDisplayId = allMotorcycles.filter(m => m.display_id).length;
+            const withoutDisplayId = totalMotorcycles - withDisplayId;
+            
+            const displayIds = allMotorcycles.map(m => m.display_id).filter(Boolean);
+            const minId = displayIds.length > 0 ? Math.min(...displayIds) : 0;
+            const maxId = displayIds.length > 0 ? Math.max(...displayIds) : 0;
+            
+            // Check for duplicates
+            const uniqueIds = [...new Set(displayIds)];
+            const hasDuplicates = displayIds.length !== uniqueIds.length;
+
+            container.innerHTML = `
+                <div style="background: #f0f0f0; padding: 10px; border-radius: 5px;">
+                    <p><strong>📊 Thống kê:</strong></p>
+                    <ul>
+                        <li>Tổng số xe: ${totalMotorcycles}</li>
+                        <li>Có Display ID: ${withDisplayId}</li>
+                        <li>Không có Display ID: ${withoutDisplayId}</li>
+                        <li>Display ID nhỏ nhất: #${String(minId).padStart(4, '0')}</li>
+                        <li>Display ID lớn nhất: #${String(maxId).padStart(4, '0')}</li>
+                        <li>Trùng lặp: ${hasDuplicates ? '❌ Có' : '✅ Không'}</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function formatPrice(price) {
+            if (!price || price <= 0) return 'Liên hệ';
+            return price.toLocaleString('vi-VN') + ' đ';
+        }
+
+        // Auto load on page load
+        window.onload = function() {
+            loadMotorcycles();
+        };
+    </script>
+</body>
+</html>

@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "description": "Vương Cường 68 - Xe Máy Cũ - Motorcycle marketplace website",
-  "keywords": ["motorcycle", "marketplace", "nextjs", "supabase", "vietnam"],
+  "keywords": [
+    "motorcycle",
+    "marketplace",
+    "nextjs",
+    "supabase",
+    "vietnam"
+  ],
   "author": "Vương Cường 68",
   "scripts": {
     "dev": "next dev",

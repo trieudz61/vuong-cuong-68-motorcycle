@@ -26,7 +26,7 @@ interface MotorcycleData {
 }
 
 const PHONE_PRIMARY = '0941231619';
-const PHONE_SECONDARY = '0975965678';
+const PHONE_SECONDARY = '0975965678zxczxczxczz';
 
 interface Props {
   id: string;
@@ -234,10 +234,17 @@ function MotorcycleDetailPage({ id }: Props) {
             
             <h1 className="text-2xl font-bold text-gray-900">
               {motorcycle.title}
-              {motorcycle.display_id && (
-                <span className="ml-2 text-lg text-amber-600 font-normal">#{String(motorcycle.display_id).padStart(4, '0')}</span>
-              )}
             </h1>
+            
+            {/* Mã Xe - hiển thị rõ ràng */}
+            {motorcycle.display_id && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                <p className="text-amber-800 font-bold text-lg">
+                  🏷️ Mã Xe: #{String(motorcycle.display_id).padStart(4, '0')}
+                </p>
+                <p className="text-amber-600 text-sm">Báo mã này khi liên hệ để được hỗ trợ nhanh chóng</p>
+              </div>
+            )}
             
             <div className="bg-gradient-to-r from-amber-500 to-amber-400 rounded-xl p-4 shadow-md">
               <p className="text-amber-900 text-sm font-medium">Giá bán</p>
@@ -365,10 +372,17 @@ function MotorcycleDetailPage({ id }: Props) {
             
             <h1 className="text-xl font-bold text-gray-900">
               {motorcycle.title}
-              {motorcycle.display_id && (
-                <span className="ml-2 text-base text-amber-600 font-normal">#{String(motorcycle.display_id).padStart(4, '0')}</span>
-              )}
             </h1>
+            
+            {/* Mã Xe - hiển thị rõ ràng cho mobile */}
+            {motorcycle.display_id && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                <p className="text-amber-800 font-bold">
+                  🏷️ Mã Xe: #{String(motorcycle.display_id).padStart(4, '0')}
+                </p>
+                <p className="text-amber-600 text-xs">Báo mã này khi liên hệ</p>
+              </div>
+            )}
             
             <div className="bg-gradient-to-r from-amber-500 to-amber-400 rounded-xl p-4">
               <p className="text-amber-900 text-sm">Giá bán</p>

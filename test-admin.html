@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin CRUD</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        button { margin: 5px; padding: 10px 15px; }
+        .success { color: green; }
+        .error { color: red; }
+        textarea { width: 100%; height: 100px; }
+        input { margin: 5px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Admin CRUD Operations</h1>
+    
+    <div class="section">
+        <h3>1. Test GET Motorcycles</h3>
+        <button onclick="testGet()">Get All Motorcycles</button>
+        <div id="getResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>2. Test CREATE Motorcycle</h3>
+        <input type="text" id="title" placeholder="Tiêu đề" value="Test Honda Wave">
+        <input type="text" id="brand" placeholder="Hãng" value="Honda">
+        <input type="text" id="model" placeholder="Model" value="Wave">
+        <input type="number" id="year" placeholder="Năm" value="2024">
+        <input type="text" id="condition" placeholder="Tình trạng" value="Mới">
+        <input type="number" id="price" placeholder="Giá" value="30000000">
+        <br>
+        <button onclick="testCreate()">Create Motorcycle</button>
+        <div id="createResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>3. Test UPDATE Motorcycle</h3>
+        <input type="text" id="updateId" placeholder="Motorcycle ID">
+        <button onclick="testUpdate()">Toggle Sold Status</button>
+        <div id="updateResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>4. Test DELETE Motorcycle</h3>
+        <input type="text" id="deleteId" placeholder="Motorcycle ID">
+        <button onclick="testDelete()">Delete Motorcycle</button>
+        <div id="deleteResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>📋 API Logs</h3>
+        <textarea id="logs" readonly></textarea>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <script>
+        function log(message) {
+            const logs = document.getElementById('logs');
+            logs.value += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').value = '';
+        }
+
+        async function testGet() {
+            try {
+                log('Testing GET /api/motorcycles...');
+                const response = await fetch('/api/motorcycles?showAll=true');
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('getResult').innerHTML = 
+                        `<div class="success">✅ Found ${result.motorcycles?.length || 0} motorcycles</div>`;
+                    log(`✅ GET Success: ${result.motorcycles?.length || 0} motorcycles`);
+                } else {
+                    document.getElementById('getResult').innerHTML = 
+                        `<div class="error">❌ Error: ${result.error}</div>`;
+                    log(`❌ GET Error: ${result.error}`);
+                }
+            } catch (error) {
+                document.getElementById('getResult').innerHTML = 
+                    `<div class="error">❌ Network Error: ${error.message}</div>`;
+                log(`❌ GET Network Error: ${error.message}`);
+            }
+        }
+
+        async function testCreate() {
+            try {
+                const data = {
+                    title: document.getElementById('title').value,
+                    brand: document.getElementById('brand').value,
+                    model: document.getElementById('model').value,
+                    year: parseInt(document.getElementById('year').value),
+                    condition: document.getElementById('condition').value,
+                    mileage: 0,
+                    engine_capacity: 110,
+                    fuel_type: 'Xăng',
+                    color: 'Đỏ',
+                    price: parseInt(document.getElementById('price').value),
+                    description: 'Test motorcycle from HTML',
+                    images: [],
+                    contact_phone: '0941231619',
+                    contact_address: '06 Lý Thường Kiệt - Phường Thành Vinh - Nghệ An'
+                };
+
+                log('Testing POST /api/motorcycles...');
+                const response = await fetch('/api/motorcycles', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('createResult').innerHTML = 
+                        `<div class="success">✅ Created: ${result.id}<br>Display ID: #${String(result.display_id || 0).padStart(4, '0')}</div>`;
+                    document.getElementById('updateId').value = result.id;
+                    document.getElementById('deleteId').value = result.id;
+                    log(`✅ CREATE Success: ${result.id}`);
+                } else {
+                    document.getElementById('createResult').innerHTML = 
+                        `<div class="error">❌ Error: ${result.error}</div>`;
+                    log(`❌ CREATE Error: ${result.error}`);
+                }
+            } catch (error) {
+                document.getElementById('createResult').innerHTML = 
+                    `<div class="error">❌ Network Error: ${error.message}</div>`;
+                log(`❌ CREATE Network Error: ${error.message}`);
+            }
+        }
+
+        async function testUpdate() {
+            const id = document.getElementById('updateId').value;
+            if (!id) {
+                alert('Please enter Motorcycle ID');
+                return;
+            }
+
+            try {
+                log(`Testing PUT /api/motorcycles/${id}...`);
+                const response = await fetch(`/api/motorcycles/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_sold: true })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('updateResult').innerHTML = 
+                        `<div class="success">✅ Updated: Sold status = ${result.is_sold}</div>`;
+                    log(`✅ UPDATE Success: ${id}`);
+                } else {
+                    document.getElementById('updateResult').innerHTML = 
+                        `<div class="error">❌ Error: ${result.error}</div>`;
+                    log(`❌ UPDATE Error: ${result.error}`);
+                }
+            } catch (error) {
+                document.getElementById('updateResult').innerHTML = 
+                    `<div class="error">❌ Network Error: ${error.message}</div>`;
+                log(`❌ UPDATE Network Error: ${error.message}`);
+            }
+        }
+
+        async function testDelete() {
+            const id = document.getElementById('deleteId').value;
+            if (!id) {
+                alert('Please enter Motorcycle ID');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to delete this motorcycle?')) {
+                return;
+            }
+
+            try {
+                log(`Testing DELETE /api/motorcycles/${id}...`);
+                const response = await fetch(`/api/motorcycles/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('deleteResult').innerHTML = 
+                        `<div class="success">✅ Deleted successfully</div>`;
+                    log(`✅ DELETE Success: ${id}`);
+                } else {
+                    document.getElementById('deleteResult').innerHTML = 
+                        `<div class="error">❌ Error: ${result.error}</div>`;
+                    log(`❌ DELETE Error: ${result.error}`);
+                }
+            } catch (error) {
+                document.getElementById('deleteResult').innerHTML = 
+                    `<div class="error">❌ Network Error: ${error.message}</div>`;
+                log(`❌ DELETE Network Error: ${error.message}`);
+            }
+        }
+
+        // Auto-load motorcycles on page load
+        window.onload = function() {
+            testGet();
+        };
+    </script>
+</body>
+</html>

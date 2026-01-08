@@ -28,6 +28,23 @@ function createSupabaseClient() {
   )
 }
 
+function createSupabaseAdminClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        async getAll() {
+          return []
+        },
+        async setAll() {
+          // No-op for service role
+        },
+      },
+    }
+  )
+}
+
 interface RouteParams {
   params: Promise<{ id: string }>
 }
@@ -60,7 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/motorcycles/[id] - Cập nhật xe máy (Admin only)
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createSupabaseClient()
+    const supabase = createSupabaseAdminClient() // Sử dụng Service Role Key
     const { id } = await params
 
     const body: UpdateMotorcycleRequest = await request.json()
@@ -103,11 +120,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .single()
 
     if (error) {
+      console.error('Supabase update error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data)
   } catch (error) {
+    console.error('API update error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -115,8 +134,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/motorcycles/[id] - Xóa xe máy (Admin only)
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createSupabaseClient()
+    const supabase = createSupabaseAdminClient() // Sử dụng Service Role Key
     const { id } = await params
+
+    // Kiểm tra xe tồn tại trước khi xóa
+    const { data: existing } = await supabase
+      .from('motorcycles')
+      .select('id')
+      .eq('id', id)
+      .single()
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Không tìm thấy xe máy' }, { status: 404 })
+    }
 
     const { error } = await supabase
       .from('motorcycles')
@@ -124,11 +154,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .eq('id', id)
 
     if (error) {
+      console.error('Supabase delete error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, message: 'Đã xóa xe máy thành công' })
   } catch (error) {
+    console.error('API delete error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
