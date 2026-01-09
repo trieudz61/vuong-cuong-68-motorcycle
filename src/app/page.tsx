@@ -12,6 +12,8 @@ const SHOP_IMAGES = [
   '/shop/shop-3.jpg',
   '/shop/shop-4.jpg',
   '/shop/shop-5.jpg',
+  '/shop/shop-6.jpg',
+  '/shop/shop-7.jpg',
 ]
 
 export default function Home() {
@@ -20,6 +22,7 @@ export default function Home() {
   const [shopImgIdx, setShopImgIdx] = useState(0)
   const [shopFade, setShopFade] = useState('opacity-100')
   const [isShopHovered, setIsShopHovered] = useState(false)
+  const [shopModal, setShopModal] = useState(false)
 
   // Auto-slide shop images with fade
   const autoSlide = useCallback(() => {
@@ -184,22 +187,30 @@ export default function Home() {
             onMouseEnter={() => setIsShopHovered(true)}
             onMouseLeave={() => setIsShopHovered(false)}
           >
-            {/* Main Image - Fixed aspect ratio */}
-            <div className="relative h-[250px] sm:h-[350px] md:h-[400px] lg:h-[450px] bg-stone-900 overflow-hidden">
+            {/* Main Image - Click to zoom */}
+            <div 
+              className="relative bg-stone-900 overflow-hidden cursor-pointer"
+              onClick={() => setShopModal(true)}
+            >
               <img 
                 src={SHOP_IMAGES[shopImgIdx]} 
                 alt="Cửa hàng Vương Cường 68"
-                className={`w-full h-full object-cover transition-opacity duration-300 ${shopFade}`}
+                className={`w-full h-auto max-h-[70vh] object-contain mx-auto transition-opacity duration-300 ${shopFade}`}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
                   target.src = '/hero-bg.jpg'
                 }}
               />
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-transparent to-stone-900/20"></div>
+              {/* Zoom hint */}
+              <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-full text-white text-sm flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                </svg>
+                Click để phóng to
+              </div>
               
               {/* Title Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
+              <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-stone-900/90 to-transparent">
                 <div className="flex items-end justify-between">
                   <div>
                     <p className="text-amber-500 font-bold text-xs sm:text-sm uppercase tracking-wider mb-1">Hình ảnh cửa hàng</p>
@@ -217,7 +228,7 @@ export default function Home() {
 
               {/* Navigation Arrows */}
               <button 
-                onClick={() => goToSlide(shopImgIdx === 0 ? SHOP_IMAGES.length - 1 : shopImgIdx - 1)}
+                onClick={(e) => { e.stopPropagation(); goToSlide(shopImgIdx === 0 ? SHOP_IMAGES.length - 1 : shopImgIdx - 1) }}
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-amber-500 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:text-stone-900 transition-all duration-300 opacity-0 group-hover:opacity-100"
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,7 +236,7 @@ export default function Home() {
                 </svg>
               </button>
               <button 
-                onClick={() => goToSlide((shopImgIdx + 1) % SHOP_IMAGES.length)}
+                onClick={(e) => { e.stopPropagation(); goToSlide((shopImgIdx + 1) % SHOP_IMAGES.length) }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-amber-500 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:text-stone-900 transition-all duration-300 opacity-0 group-hover:opacity-100"
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,7 +247,7 @@ export default function Home() {
 
             {/* Thumbnail Strip */}
             <div className="bg-stone-900 p-2 sm:p-3">
-              <div className="flex gap-2 justify-center">
+              <div className="flex gap-2 justify-center overflow-x-auto">
                 {SHOP_IMAGES.map((img, i) => (
                   <button 
                     key={i}
@@ -474,6 +485,55 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Shop Image Modal */}
+      {shopModal && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          onClick={() => setShopModal(false)}
+        >
+          {/* Close button */}
+          <button 
+            className="absolute top-4 right-4 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full text-white flex items-center justify-center z-10 transition-colors"
+            onClick={() => setShopModal(false)}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Main Image */}
+          <img 
+            src={SHOP_IMAGES[shopImgIdx]} 
+            alt="Cửa hàng Vương Cường 68"
+            className="max-w-[95vw] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Navigation Arrows */}
+          <button 
+            onClick={(e) => { e.stopPropagation(); goToSlide(shopImgIdx === 0 ? SHOP_IMAGES.length - 1 : shopImgIdx - 1) }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-amber-500 rounded-full text-white hover:text-stone-900 flex items-center justify-center transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button 
+            onClick={(e) => { e.stopPropagation(); goToSlide((shopImgIdx + 1) % SHOP_IMAGES.length) }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-amber-500 rounded-full text-white hover:text-stone-900 flex items-center justify-center transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          {/* Counter */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full text-white">
+            {shopImgIdx + 1} / {SHOP_IMAGES.length}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
