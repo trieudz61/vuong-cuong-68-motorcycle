@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Roboto } from "next/font/google";
 import "./globals.css";
 import { TransitionProvider } from "@/components/providers/TransitionProvider";
+import { VisitorTracker } from "@/components/VisitorTracker";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -45,6 +46,7 @@ export default function RootLayout({
         className={`${inter.variable} ${roboto.variable} font-sans antialiased`}
       >
         <TransitionProvider>
+          <VisitorTracker />
           {children}
         </TransitionProvider>
       </body>
